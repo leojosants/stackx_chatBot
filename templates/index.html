@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<title>ChatBot</title>
+
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css"
+		/>
+
+		<link
+			rel="stylesheet"
+			href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+		/>
+
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+		/>
+
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="{{ url_for('static', filename='style.css') }}"
+		/>
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+		<script src="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/lib/languages/python.min.js"></script>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+	</head>
+	<body>
+		<div class="container mt-5">
+			<h1 style="color: white">Projeto ChatBot</h1>
+
+			<div class="chat-box mt-3">
+				<!-- mensagem do usuario sera adicionada aqui -->
+			</div>
+
+			<div class="form-group mt-3">
+				<textarea
+					class="form-control"
+					rows="3"
+					id="send-btn"
+					placeholder="Escreva sua mensagem ou dúvida"
+				></textarea>
+			</div>
+
+			<button type="button" class="btn btn-primary" id="send-btn">
+				Enviar
+			</button>
+		</div>
+
+		<!-- js -->
+		<script>
+			setInterval(highlightAll, 1000);
+
+			function highlightAll() {
+				document.querySelectorAll('pre code').forEach((block) => {
+					h1js.highlightBlock(block);
+				});
+			}
+
+			const chat_box = document.querySelector('.chat-box');
+			const message_input = document.querySelector('#message-input');
+			const send_btn = document.querySelector('#send-btn');
+
+			function addMessage(message, isUserMessage) {
+				const message_div = document.createElement('div');
+				message_div.classList.add('mt-3', 'p-3', 'rounded');
+
+				if (isUserMessage) {
+					message.classList.add('user-message');
+				} else {
+					message_div.classList.add('bot-message');
+				}
+
+				// imagem dos icones da interface
+
+				message_div.innerHTML = `
+					<img src="{{ url_for('static', filename='images/user.png')}}" class="user-icon" />
+					<p>${message}</p>
+				`;
+
+				chat_box.appendChild(message_div);
+				chat_box.scrollTop = chat_box.scrollHeight;
+			}
+
+			function sendMessage() {
+				const message = message_input.value.trim();
+
+				if (message !== '') {
+					addMessage(message, true);
+					fetch('/api', {
+						method: 'POST',
+						headers: {
+							'Content-type': 'application/json',
+						},
+						body: JSON.stringify({ message }),
+					})
+						.then((response) => response.json())
+						.then((data) => {
+							message.value = '';
+
+							const message_div = document.createElement('div');
+							message_div.classList.add('mt-3', 'p-3', 'rounded');
+							message_div.classList.add('boot-message');
+
+							const content = data.content;
+							const has_code_block = content.includes('```');
+
+							if (has_code_block) {
+								const code_content = content.replace(
+									/```([\s\S]+?)```/g,
+									'<p><pre><code>$1</code></pre></p>'
+								);
+
+								message_div.innerHTML = `
+									<img src="{{ url_for('static', filename='images/gpt.png')}}" class="bot-icon" />
+									<p>${code_content}</p>
+								`;
+							} else {
+								message_div.innerHTML = `
+									<img src="{{ url_for('static', filename='images/gpt.png')}}" class="bot-icon" />
+									<p>${content}</p>
+								`;
+							}
+
+							chat_box.appendChild(message_div);
+							chat_box.scrollTop = chat_box.scrollHeight;
+						});
+				}
+			}
+		</script>
+	</body>
+</html>
